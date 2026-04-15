@@ -22,21 +22,38 @@ function EmployerDashboard() {
     }
   };
 
+  const statusTone =
+    status === "Payroll confirmed by employer"
+      ? "success"
+      : status === "No confirmation submitted"
+        ? "idle"
+        : status === "Invalid contractor address"
+          ? "warning"
+          : "idle";
+
   return (
-    <section>
-      <h2>Employer Dashboard</h2>
+    <section className="dashboard-stack">
+      <div className="glass-card form-card form-card--accent-top">
       <PayrollForm />
-      <h3>Confirm Payroll</h3>
-      <input
-        type="text"
-        placeholder="Contractor address"
-        value={contractorToConfirm}
-        onChange={(event) => setContractorToConfirm(event.target.value)}
-      />
-      <button type="button" onClick={handleConfirm}>
-        Confirm Payroll
-      </button>
-      <p>{status}</p>
+      </div>
+
+      <div className="glass-card form-card form-card--accent-top">
+        <div className="section-heading section-heading--compact">
+          <h3>Confirm Payroll</h3>
+        </div>
+        <label htmlFor="contractor-confirm">Contractor address</label>
+        <input
+          id="contractor-confirm"
+          type="text"
+          placeholder="Contractor address"
+          value={contractorToConfirm}
+          onChange={(event) => setContractorToConfirm(event.target.value)}
+        />
+        <button type="button" className="button button--full" onClick={handleConfirm}>
+          Confirm Payroll
+        </button>
+        <div className={`status-pill status-pill--${statusTone}`}>{status}</div>
+      </div>
     </section>
   );
 }

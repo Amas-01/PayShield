@@ -11,6 +11,15 @@ function ContractorView() {
   const [decryptedPay, setDecryptedPay] = useState<string>("");
   const { decryptNetPay } = useFHE();
 
+  const statusTone =
+    status === "Decryption complete"
+      ? "success"
+      : status === "Waiting for employer address"
+        ? "warning"
+        : status.toLowerCase().includes("invalid") || status.toLowerCase().includes("connect")
+          ? "warning"
+          : "idle";
+
   const { data: encryptedHandle, refetch } = useReadContract({
     address: CONTRACT_ADDRESSES.payroll,
     abi: PAYSHIELD_PAYROLL_ABI,
@@ -50,19 +59,22 @@ function ContractorView() {
   };
 
   return (
-    <section>
-      <h2>Contractor View</h2>
+    <section className="form-grid">
       <p>Decrypt and display only your own payroll value.</p>
-      <input
-        type="text"
-        placeholder="Employer address"
-        value={employerAddress}
-        onChange={(event) => setEmployerAddress(event.target.value)}
-      />
-      <button type="button" onClick={loadAndDecrypt}>
+      <div className="form-field form-field--full">
+        <label htmlFor="employer-address">Employer address</label>
+        <input
+          id="employer-address"
+          type="text"
+          placeholder="Employer address"
+          value={employerAddress}
+          onChange={(event) => setEmployerAddress(event.target.value)}
+        />
+      </div>
+      <button type="button" className="button button--full" onClick={loadAndDecrypt}>
         Decrypt My Pay
       </button>
-      <p>{status}</p>
+      <div className={`status-pill status-pill--${statusTone}`}>{status}</div>
       {decryptedPay ? <p>Decrypted Net Pay: {decryptedPay}</p> : null}
     </section>
   );

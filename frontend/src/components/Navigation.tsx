@@ -18,8 +18,10 @@ export default function Navigation() {
   return (
     <nav className="navbar">
       <div className="navbar__container">
-        <Link to="/" className="navbar__logo">
-          <img src="/payshield-logo.svg" alt="PayShield" className="navbar__logo-img" />
+        <Link to="/" className="navbar__logo" aria-label="PayShield home">
+          <span className="navbar__logo-mark" aria-hidden="true">
+            <img src="/payshield-logo.svg" alt="PayShield" className="navbar__logo-img" />
+          </span>
           <span className="navbar__logo-text">PayShield</span>
         </Link>
 
@@ -48,18 +50,18 @@ export default function Navigation() {
 
         <div className="navbar__wallet">
           {isConnected ? (
-            <>
+            <div className="navbar__wallet-connected">
               <div className="wallet-badge">{walletShort}</div>
-              <button className="button-secondary button-sm" onClick={() => disconnect()}>
+              <button className="button button--secondary button-sm" onClick={() => disconnect()}>
                 Disconnect
               </button>
-            </>
+            </div>
           ) : (
-            <div className="connect-dropdown">
+            <div className="connect-row" aria-label="Available wallet connectors">
               {connectors.map((connector) => (
                 <button
                   key={connector.uid}
-                  className="button button-sm"
+                  className="connect-pill"
                   onClick={() => connect({ connector })}
                 >
                   {connector.name}
