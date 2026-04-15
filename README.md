@@ -147,22 +147,6 @@ Judge-signal assertion is included in `backend/test/PayShieldPayroll.test.ts` vi
 
 This confirms ciphertext payroll multiplication correctness without exposing plaintext on-chain.
 
-## 🌊 Wave 3 Status
-
-Completed:
-
-- Frontend encrypted payroll flow in `EmployerDashboard.tsx` + `PayrollForm.tsx`
-- Contractor decrypt flow in `ContractorView.tsx`
-- Pool funding flow in `PoolFunding.tsx`
-- `useFHE.ts` encrypt/decrypt helper hook using CoFHE client and permits
-- `usePayroll.ts` wagmi contract interaction hook
-- Frontend production build passes (`npm run build`)
-
-Pending external runtime inputs for full testnet demo:
-
-- Set frontend env vars (`VITE_PAYSHIELD_*` addresses, RPC URL)
-- Set backend `.env` value `USDC_ADDRESS` (deployment currently fails fast if missing)
-- Deploy contracts on Arbitrum Sepolia and save addresses to `backend/deployments/`
 
 ## 📚 Resources
  
