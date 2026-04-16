@@ -48,7 +48,8 @@ payshield/
 │   │   ├── PayShieldRegistry.test.ts
 │   │   └── PayShieldEscrow.test.ts
 │   ├── scripts/
-│   │   └── deploy.ts
+│   │   ├── deploy.ts
+│   │   └── deploy-mock-token.ts
 │   ├── tasks/
 │   │   ├── fund-payroll.ts
 │   │   └── process-payout.ts
@@ -113,6 +114,39 @@ cp .env.example .env
 cd ../frontend
 npm install
 ```
+
+## 🌐 Arbitrum Sepolia Deployment (2026-04-16)
+
+Deployed from `backend/` using Hardhat network `arbitrumSepolia` (`chainId: 421614`) and the private key configured in `.env`.
+
+Commands executed:
+
+```bash
+npx hardhat run scripts/deploy-mock-token.ts --network arbitrumSepolia
+USDC_ADDRESS=<mock_token_address> npx hardhat run scripts/deploy.ts --network arbitrumSepolia
+```
+
+Deployed addresses:
+
+| Contract | Address |
+|---|---|
+| MockFHERC20 (USDC) | `0x8A0A3cDd08Cec51bB8Ea3544414BFa47C3971D1D` |
+| PayShieldRegistry | `0xF59307818AD31c808828E0b55781a383C017b68b` |
+| PayShieldPayroll | `0x0eBbfa5dd7FE2E36aA0613780D0E25B260023cE8` |
+| PayShieldPool | `0x36E2fF7DEf8a00325Af4436fc0f3291dC4C99e56` |
+| PayShieldEscrow | `0x9C829A4a0d7e4a9d1A91B4EE0E2bF071e51eEbd8` |
+
+Address wiring completed:
+
+- `backend/.env`
+    - `USDC_ADDRESS=0x8A0A3cDd08Cec51bB8Ea3544414BFa47C3971D1D`
+    - `PAYSHIELD_POOL_ADDRESS=0x36E2fF7DEf8a00325Af4436fc0f3291dC4C99e56`
+    - `PAYSHIELD_ESCROW_ADDRESS=0x9C829A4a0d7e4a9d1A91B4EE0E2bF071e51eEbd8`
+- `frontend/.env`
+    - `VITE_PAYSHIELD_REGISTRY_ADDRESS=0xF59307818AD31c808828E0b55781a383C017b68b`
+    - `VITE_PAYSHIELD_PAYROLL_ADDRESS=0x0eBbfa5dd7FE2E36aA0613780D0E25B260023cE8`
+    - `VITE_PAYSHIELD_POOL_ADDRESS=0x36E2fF7DEf8a00325Af4436fc0f3291dC4C99e56`
+    - `VITE_PAYSHIELD_ESCROW_ADDRESS=0x9C829A4a0d7e4a9d1A91B4EE0E2bF071e51eEbd8`
 
 ## ✅ Wave 2 Validation
 
