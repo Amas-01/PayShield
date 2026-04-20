@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { isAddress } from "viem";
 import { useFHE } from "../hooks/useFHE";
 import { usePayroll } from "../hooks/usePayroll";
+import { formatUserError } from "../lib/errors";
 
 function PayrollForm() {
   const [contractor, setContractor] = useState("");
@@ -12,14 +13,21 @@ function PayrollForm() {
   const { encryptPayrollInputs, isEncrypting } = useFHE();
   const { submitPayroll, isPending, hash } = usePayroll();
 
+  const statusLower = status.toLowerCase();
+
   const statusTone =
     status === "Ready" || status === "Submitted successfully"
       ? "success"
       : status === "Invalid contractor address"
         ? "warning"
-        : status.toLowerCase().includes("submitting") || status.toLowerCase().includes("encrypting")
+        : statusLower.includes("submitting") ||
+            statusLower.includes("encrypting") ||
+            statusLower.includes("register") ||
+            statusLower.includes("checking") ||
+            statusLower.includes("waiting") ||
+            statusLower.includes("preparing")
           ? "idle"
-          : "idle";
+          : "error";
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -32,11 +40,10 @@ function PayrollForm() {
       setStatus("Encrypting payroll inputs...");
       const encrypted = await encryptPayrollInputs(Number(hours), Number(rate));
 
-      setStatus("Submitting encrypted payroll transaction...");
-      await submitPayroll(contractor, encrypted.encryptedHours as any, encrypted.encryptedRate as any);
+      await submitPayroll(contractor, encrypted.encryptedHours as any, encrypted.encryptedRate as any, setStatus);
       setStatus("Submitted successfully");
     } catch (error) {
-      setStatus((error as Error).message);
+      setStatus(formatUserError(error));
     }
   };
 

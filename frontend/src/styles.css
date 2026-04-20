@@ -899,12 +899,17 @@ textarea:focus {
 }
 
 .status-pill {
-  width: fit-content;
-  padding: 0.42rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.78rem;
+  width: 100%;
+  padding: 0.62rem 0.8rem;
+  border-radius: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.01em;
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  justify-content: flex-start;
 }
 
 .status-pill--success {
@@ -923,6 +928,12 @@ textarea:focus {
   color: #cbd5e1;
   background: rgba(148, 163, 184, 0.12);
   border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.status-pill--error {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
 .form-grid > p,

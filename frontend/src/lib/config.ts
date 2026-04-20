@@ -66,4 +66,74 @@ export const PAYSHIELD_POOL_ABI = [
     inputs: [{ name: "amount", type: "uint256" }],
     outputs: [],
   },
+  {
+    type: "function",
+    name: "usdc",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+  },
+] as const;
+
+export const PAYSHIELD_REGISTRY_ABI = [
+  {
+    type: "function",
+    name: "registerContractor",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "contractor", type: "address" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "isEmployerContractor",
+    stateMutability: "view",
+    inputs: [
+      { name: "employer", type: "address" },
+      { name: "contractor", type: "address" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+] as const;
+
+export const ERC20_ABI = [
+  {
+    type: "function",
+    name: "balanceOf",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "allowance",
+    stateMutability: "view",
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "approve",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+] as const;
+
+export const MOCK_TOKEN_ABI = [
+  {
+    type: "function",
+    name: "mint",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
 ] as const;

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { isAddress } from "viem";
+import { formatUserError } from "../lib/errors";
 import { usePayroll } from "../hooks/usePayroll";
 import PayrollForm from "./PayrollForm";
 
@@ -18,7 +19,7 @@ function EmployerDashboard() {
       await confirmPayroll(contractorToConfirm);
       setStatus("Payroll confirmed by employer");
     } catch (error) {
-      setStatus((error as Error).message);
+      setStatus(formatUserError(error));
     }
   };
 
@@ -29,7 +30,7 @@ function EmployerDashboard() {
         ? "idle"
         : status === "Invalid contractor address"
           ? "warning"
-          : "idle";
+          : "error";
 
   return (
     <section className="dashboard-stack">

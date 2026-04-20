@@ -3,6 +3,7 @@ import { isAddress } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 import { useFHE } from "../hooks/useFHE";
 import { CONTRACT_ADDRESSES, PAYSHIELD_PAYROLL_ABI } from "../lib/config";
+import { formatUserError } from "../lib/errors";
 
 function ContractorView() {
   const { address } = useAccount();
@@ -54,13 +55,13 @@ function ContractorView() {
       setDecryptedPay(decrypted.toString());
       setStatus("Decryption complete");
     } catch (error) {
-      setStatus((error as Error).message);
+      setStatus(formatUserError(error));
     }
   };
 
   return (
     <section className="form-grid">
-      <p>Decrypt and display only your own payroll value.</p>
+      <p>Decrypt and display only your own payroll value. Use your contractor wallet to decrypt successfully.</p>
       <div className="form-field form-field--full">
         <label htmlFor="employer-address">Employer address</label>
         <input
