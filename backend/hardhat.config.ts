@@ -1,6 +1,7 @@
 import type { HardhatUserConfig } from "hardhat/config";
 import "@cofhe/hardhat-plugin";
 import "@nomicfoundation/hardhat-toolbox";
+import "hardhat-gas-reporter";
 import "dotenv/config";
 import "./tasks/fund-payroll";
 import "./tasks/process-payout";
@@ -15,6 +16,13 @@ const config: HardhatUserConfig = {
     settings: {
       evmVersion: "cancun",
     },
+  },
+  gasReporter: {
+    enabled: true,
+    currency: "USD",
+    gasPrice: 21,
+    outputFile: "gas-report.txt",
+    noColors: true,
   },
   networks: {
     arbitrumSepolia: {
