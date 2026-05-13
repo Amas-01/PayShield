@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAccount, usePublicClient, useWaitForTransactionReceipt, useWalletClient, useWriteContract } from "wagmi";
 import { CONTRACT_ADDRESSES, ERC20_ABI, PAYSHIELD_PAYROLL_ABI, PAYSHIELD_POOL_ABI, PAYSHIELD_REGISTRY_ABI } from "../lib/config";
 
@@ -18,6 +18,48 @@ export function usePayroll() {
   const { address: employerAddress } = useAccount();
   const { writeContractAsync, data: hash, isPending } = useWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash });
+  const [payrollError, setPayrollError] = useState<string>("");
+
+  const decodeCustomError = (errorData: string): string => {
+    // Custom error signature -> message mapping
+    const errorMap: Record<string, string> = {
+      "0xc8c8dd8c": "This contractor is not registered to your account.",
+      "0x48c1e9ec": "Your payroll pool has no funds. Please deposit USDC first.",
+      "0xa86f7dbe": "Payroll was already submitted for this contractor recently. Wait 24 hours between submissions.",
+    };
+
+    const selector = errorData.slice(0, 10);
+    return errorMap[selector] || "Transaction failed. Please check your inputs and try again.";
+  };
+
+  const handleError = (error: unknown): string => {
+    const errorStr = String(error);
+    
+    if (errorStr.includes("0x") && errorStr.includes("data")) {
+      try {
+        const match = errorStr.match(/0x[a-fA-F0-9]+/);
+        if (match) {
+          return decodeCustomError(match[0]);
+        }
+      } catch {
+        // Fallback to generic message
+      }
+    }
+
+    if (errorStr.includes("user rejected")) {
+      return "Transaction rejected. Please approve it in your wallet.";
+    }
+
+    if (errorStr.includes("insufficient funds")) {
+      return "Insufficient funds in your wallet to pay for gas.";
+    }
+
+    if (errorStr.includes("network")) {
+      return "Network error. Please check your connection and try again.";
+    }
+
+    return "Transaction failed. Please try again.";
+  };
 
   const isConfigured = useMemo(() => {
     return (
@@ -110,31 +152,45 @@ export function usePayroll() {
     encryptedRate: EncryptedInputStruct,
     onStatusChange?: SubmitPayrollStatusHandler
   ) => {
-    await ensureContractorRegistered(contractor, onStatusChange);
-    onStatusChange?.("Submitting encrypted payroll transaction...");
-    const feeOverrides = await getFeeOverrides();
+    setPayrollError("");
+    try {
+      await ensureContractorRegistered(contractor, onStatusChange);
+      onStatusChange?.("Submitting encrypted payroll transaction...");
+      const feeOverrides = await getFeeOverrides();
 
-    return writeContractAsync({
-      address: CONTRACT_ADDRESSES.payroll,
-      abi: PAYSHIELD_PAYROLL_ABI,
-      functionName: "submitPayroll",
-      args: [contractor, encryptedHours, encryptedRate],
-      ...feeOverrides,
-    });
+      return writeContractAsync({
+        address: CONTRACT_ADDRESSES.payroll,
+        abi: PAYSHIELD_PAYROLL_ABI,
+        functionName: "submitPayroll",
+        args: [contractor, encryptedHours, encryptedRate],
+        ...feeOverrides,
+      });
+    } catch (error) {
+      const message = handleError(error);
+      setPayrollError(message);
+      throw error;
+    }
   };
 
   const confirmPayroll = async (contractor: `0x${string}`) => {
-    assertConfigured();
+    setPayrollError("");
+    try {
+      assertConfigured();
 
-    const feeOverrides = await getFeeOverrides();
+      const feeOverrides = await getFeeOverrides();
 
-    return writeContractAsync({
-      address: CONTRACT_ADDRESSES.payroll,
-      abi: PAYSHIELD_PAYROLL_ABI,
-      functionName: "confirmPayroll",
-      args: [contractor],
-      ...feeOverrides,
-    });
+      return writeContractAsync({
+        address: CONTRACT_ADDRESSES.payroll,
+        abi: PAYSHIELD_PAYROLL_ABI,
+        functionName: "confirmPayroll",
+        args: [contractor],
+        ...feeOverrides,
+      });
+    } catch (error) {
+      const message = handleError(error);
+      setPayrollError(message);
+      throw error;
+    }
   };
 
   const prepareStablecoinDisbursement = async (amount: string) => {
@@ -204,73 +260,85 @@ export function usePayroll() {
   };
 
   const depositToPoolWithStatus = async (amount: bigint, onStatusChange?: DepositStatusHandler) => {
-    assertConfigured();
+    setPayrollError("");
+    try {
+      assertConfigured();
 
-    if (!publicClient || !walletClient || !employerAddress) {
-      throw new Error("Connect wallet before depositing to pool");
-    }
+      if (!publicClient || !walletClient || !employerAddress) {
+        throw new Error("Connect wallet before depositing to pool");
+      }
 
-    onStatusChange?.("Resolving pool token address...");
-    const poolTokenAddress = await publicClient.readContract({
-      address: CONTRACT_ADDRESSES.pool,
-      abi: PAYSHIELD_POOL_ABI,
-      functionName: "usdc",
-    });
-
-    onStatusChange?.("Checking USDC balance and allowance...");
-    const [balance, allowance] = await Promise.all([
-      publicClient.readContract({
-        address: poolTokenAddress,
-        abi: ERC20_ABI,
-        functionName: "balanceOf",
-        args: [employerAddress],
-      }),
-      publicClient.readContract({
-        address: poolTokenAddress,
-        abi: ERC20_ABI,
-        functionName: "allowance",
-        args: [employerAddress, CONTRACT_ADDRESSES.pool],
-      }),
-    ]);
-
-    if (balance < amount) {
-      throw new Error("Insufficient USDC balance. Mint/fund USDC in your employer wallet, then retry.");
-    }
-
-    if (allowance < amount) {
-      onStatusChange?.("Approving pool to spend USDC...");
-      const approveFeeOverrides = await getFeeOverrides();
-      // Approve unlimited (max uint256) to avoid re-approval on future deposits
-      const maxApproval = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-      const approveHash = await writeContractAsync({
-        address: poolTokenAddress,
-        abi: ERC20_ABI,
-        functionName: "approve",
-        args: [CONTRACT_ADDRESSES.pool, maxApproval],
-        ...approveFeeOverrides,
+      onStatusChange?.("Depositing USDC to payroll pool...");
+      onStatusChange?.("Resolving pool token address...");
+      const poolTokenAddress = await publicClient.readContract({
+        address: CONTRACT_ADDRESSES.pool,
+        abi: PAYSHIELD_POOL_ABI,
+        functionName: "usdc",
       });
 
-      onStatusChange?.("Waiting for approval confirmation...");
-      await publicClient.waitForTransactionReceipt({ hash: approveHash });
+      onStatusChange?.("Checking USDC balance and allowance...");
+      const [balance, allowance] = await Promise.all([
+        publicClient.readContract({
+          address: poolTokenAddress,
+          abi: ERC20_ABI,
+          functionName: "balanceOf",
+          args: [employerAddress],
+        }),
+        publicClient.readContract({
+          address: poolTokenAddress,
+          abi: ERC20_ABI,
+          functionName: "allowance",
+          args: [employerAddress, CONTRACT_ADDRESSES.pool],
+        }),
+      ]);
+
+      if (balance < amount) {
+        throw new Error("Insufficient USDC balance. Mint/fund USDC in your employer wallet, then retry.");
+      }
+
+      if (allowance < amount) {
+        onStatusChange?.("Approving pool to spend USDC...");
+        const approveFeeOverrides = await getFeeOverrides();
+        // Approve unlimited (max uint256) to avoid re-approval on future deposits
+        const maxApproval = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        const approveHash = await writeContractAsync({
+          address: poolTokenAddress,
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [CONTRACT_ADDRESSES.pool, maxApproval],
+          ...approveFeeOverrides,
+        });
+
+        onStatusChange?.("Waiting for approval confirmation...");
+        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+      }
+
+      onStatusChange?.("Submitting pool deposit transaction...");
+      const feeOverrides = await getFeeOverrides();
+
+      return writeContractAsync({
+        address: CONTRACT_ADDRESSES.pool,
+        abi: PAYSHIELD_POOL_ABI,
+        functionName: "deposit",
+        args: [amount],
+        ...feeOverrides,
+      });
+    } catch (error) {
+      const message = handleError(error);
+      setPayrollError(message);
+      throw error;
     }
-
-    onStatusChange?.("Submitting pool deposit transaction...");
-    const feeOverrides = await getFeeOverrides();
-
-    return writeContractAsync({
-      address: CONTRACT_ADDRESSES.pool,
-      abi: PAYSHIELD_POOL_ABI,
-      functionName: "deposit",
-      args: [amount],
-      ...feeOverrides,
-    });
   };
+
+  const clearError = () => setPayrollError("");
 
   return {
     hash,
     isPending,
     isConfigured,
     receipt,
+    payrollError,
+    clearError,
     getFeeOverrides,
     submitPayroll,
     confirmPayroll,

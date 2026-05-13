@@ -2,14 +2,23 @@ import { useState } from "react";
 import { isAddress } from "viem";
 import { formatUserError } from "../lib/errors";
 import { usePayroll } from "../hooks/usePayroll";
+import { useFHE } from "../hooks/useFHE";
 import PayrollForm from "./PayrollForm";
+import { ErrorBanner } from "./ErrorBanner";
 
 function EmployerDashboard() {
   const [contractorToConfirm, setContractorToConfirm] = useState("");
   const [status, setStatus] = useState("No confirmation submitted");
-  const { confirmPayroll } = usePayroll();
+  const { confirmPayroll, payrollError, clearError: clearPayrollError } = usePayroll();
+  const { fheError, clearError: clearFheError } = useFHE();
+
+  // Show the most recent error
+  const displayError = payrollError || fheError;
 
   const handleConfirm = async () => {
+    clearPayrollError();
+    clearFheError();
+    
     if (!isAddress(contractorToConfirm)) {
       setStatus("Invalid contractor address");
       return;
@@ -23,6 +32,13 @@ function EmployerDashboard() {
     }
   };
 
+  const handleContractorChange = (value: string) => {
+    setContractorToConfirm(value);
+    // Clear errors on input change
+    clearPayrollError();
+    clearFheError();
+  };
+
   const statusTone =
     status === "Payroll confirmed by employer"
       ? "success"
@@ -34,8 +50,18 @@ function EmployerDashboard() {
 
   return (
     <section className="dashboard-stack">
+      {displayError && (
+        <ErrorBanner
+          error={displayError}
+          onDismiss={() => {
+            clearPayrollError();
+            clearFheError();
+          }}
+        />
+      )}
+
       <div className="glass-card form-card form-card--accent-top">
-      <PayrollForm />
+        <PayrollForm />
       </div>
 
       <div className="glass-card form-card form-card--accent-top">
@@ -48,7 +74,7 @@ function EmployerDashboard() {
           type="text"
           placeholder="Contractor address"
           value={contractorToConfirm}
-          onChange={(event) => setContractorToConfirm(event.target.value)}
+          onChange={(event) => handleContractorChange(event.target.value)}
         />
         <button type="button" className="button button--full" onClick={handleConfirm}>
           Confirm Payroll
