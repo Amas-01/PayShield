@@ -3,8 +3,10 @@ pragma solidity ^0.8.24;
 
 import "@fhenixprotocol/cofhe-contracts/FHE.sol";
 import "./PayShieldRegistry.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./PayShieldPool.sol";
 
-contract PayShieldPayroll {
+contract PayShieldPayroll is ReentrancyGuard {
     struct PayrollRecord {
         euint32 encryptedHours;
         euint32 encryptedRate;
@@ -15,6 +17,15 @@ contract PayShieldPayroll {
 
     PayShieldRegistry public immutable registry;
     mapping(address employer => mapping(address contractor => PayrollRecord record)) private payrollRecords;
+    PayShieldPool public pool;
+    address public owner;
+
+    uint256 public constant MIN_PAYROLL_INTERVAL = 1 days;
+    mapping(address employer => mapping(address contractor => uint256 lastPayrollTimestamp)) public lastPayrollTimestamp;
+
+    error ContractorNotRegistered(address contractor);
+    error InsufficientPoolBalance(address employer);
+    error PayrollTooRecent(address contractor, uint256 lastTimestamp);
 
     event PayrollSubmitted(
         address indexed employer,
@@ -28,10 +39,28 @@ contract PayShieldPayroll {
     constructor(address registryAddress) {
         require(registryAddress != address(0), "invalid registry");
         registry = PayShieldRegistry(registryAddress);
+        owner = msg.sender;
     }
 
-    function submitPayroll(address contractor, InEuint32 memory encryptedHours, InEuint32 memory encryptedRate) external {
-        require(registry.isEmployerContractor(msg.sender, contractor), "contractor not registered");
+    modifier onlyOwner() {
+        require(msg.sender == owner, "only owner");
+        _;
+    }
+
+    function setPool(address poolAddress) external onlyOwner {
+        require(poolAddress != address(0), "invalid pool");
+        pool = PayShieldPool(poolAddress);
+    }
+
+    function submitPayroll(address contractor, InEuint32 memory encryptedHours, InEuint32 memory encryptedRate) external nonReentrant {
+        if (!registry.isEmployerContractor(msg.sender, contractor)) revert ContractorNotRegistered(contractor);
+
+        if (address(pool) == address(0) || pool.balanceOf(msg.sender) == 0) revert InsufficientPoolBalance(msg.sender);
+
+        uint256 last = lastPayrollTimestamp[msg.sender][contractor];
+        if (last != 0 && block.timestamp - last < MIN_PAYROLL_INTERVAL) {
+            revert PayrollTooRecent(contractor, last);
+        }
 
         euint32 encryptedHoursValue = FHE.asEuint32(encryptedHours);
         euint32 encryptedRateValue = FHE.asEuint32(encryptedRate);
@@ -47,6 +76,8 @@ contract PayShieldPayroll {
             exists: true,
             employerConfirmed: false
         });
+
+        lastPayrollTimestamp[msg.sender][contractor] = block.timestamp;
 
         emit PayrollSubmitted(msg.sender, contractor, encryptedHoursValue, encryptedRateValue, calculatedNetPay);
     }
