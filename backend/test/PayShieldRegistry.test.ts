@@ -8,6 +8,7 @@ describe("PayShieldRegistry", function () {
     const registryFactory = await hre.ethers.getContractFactory("PayShieldRegistry");
     const registry = await registryFactory.connect(employer).deploy();
     await registry.waitForDeployment();
+    await registry.connect(employer).registerEmployer();
 
     return { employer, contractor, registry };
   }

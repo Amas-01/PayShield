@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 contract PayShieldRegistry {
+    error UnauthorizedCaller(address caller);
     enum ContractorState {
         Active,
         Paid,
@@ -15,12 +16,18 @@ contract PayShieldRegistry {
 
     mapping(address employer => address[] contractors) private employerContractors;
     mapping(address employer => mapping(address contractor => ContractorRecord record)) private contractorRecords;
+    mapping(address => bool) public employers;
 
     event ContractorRegistered(address indexed employer, address indexed contractor);
     event ContractorStateUpdated(address indexed employer, address indexed contractor, ContractorState state);
 
+    function registerEmployer() external {
+        employers[msg.sender] = true;
+    }
+
     function registerContractor(address contractor) external {
-        require(contractor != address(0), "invalid contractor");
+        if (!employers[msg.sender]) revert UnauthorizedCaller(msg.sender);
+        if (contractor == address(0)) revert UnauthorizedCaller(msg.sender);
 
         ContractorRecord storage record = contractorRecords[msg.sender][contractor];
         if (!record.exists) {
@@ -31,6 +38,26 @@ contract PayShieldRegistry {
         record.state = ContractorState.Active;
 
         emit ContractorRegistered(msg.sender, contractor);
+        emit ContractorStateUpdated(msg.sender, contractor, ContractorState.Active);
+    }
+
+    function removeContractor(address contractor) external {
+        if (!employers[msg.sender]) revert UnauthorizedCaller(msg.sender);
+
+        ContractorRecord storage record = contractorRecords[msg.sender][contractor];
+        require(record.exists, "contractor not registered");
+
+        // remove from array by swapping with last
+        address[] storage list = employerContractors[msg.sender];
+        for (uint256 i = 0; i < list.length; i++) {
+            if (list[i] == contractor) {
+                list[i] = list[list.length - 1];
+                list.pop();
+                break;
+            }
+        }
+
+        record.exists = false;
         emit ContractorStateUpdated(msg.sender, contractor, ContractorState.Active);
     }
 
