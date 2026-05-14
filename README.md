@@ -135,7 +135,7 @@ All contracts use custom Solidity errors (not string require messages) for gas e
 
 ### Compliance
 
-📋 **NDPR Compliance Documentation**: See [backend/COMPLIANCE.md](backend/COMPLIANCE.md) for detailed analysis of:
+📋 **NDPR Compliance Documentation**: See [docs/COMPLIANCE.md](docs/COMPLIANCE.md) for detailed analysis of:
 - Data minimisation (encrypted ciphertext only on-chain)
 - Purpose limitation (FHE.allow() access control)
 - Right of access (contractor self-decryption)
@@ -155,9 +155,9 @@ cd ../frontend
 npm install
 ```
 
-## 🌐 Arbitrum Sepolia Deployment (Wave 4: January 2025)
+## 🌐 Arbitrum Sepolia Deployment
 
-Deployed from `backend/` using Hardhat network `arbitrumSepolia` with security hardening from Tasks 1-4.
+Deployed from `backend/` using Hardhat network `arbitrumSepolia` with security hardening
 
 **Deployment Commands**:
 
@@ -180,7 +180,7 @@ pnpm test  # All 34 tests passing
 | PayShieldEscrow | `0x29523737B8A5BC515e66153549A6a6ca48d9dF27` | ✅ |
 
 **Note**: These are the latest Wave 4 hardened contract addresses on Arbitrum Sepolia.  
-See [DEPLOYMENT.md](backend/DEPLOYMENT.md) for deployment and verification workflow.
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for deployment and verification workflow.
 
 ### Configuration
 
@@ -213,7 +213,7 @@ See [DEPLOYMENT.md](backend/DEPLOYMENT.md) for deployment and verification workf
 | **deposit()** | ~78k gas | USDC transfer + balance update |
 | **release()** | ~52k gas | Contractor fund transfer |
 
-📈 **Complete Analysis**: See [backend/GAS_BENCHMARKS.md](backend/GAS_BENCHMARKS.md) for:
+📈 **Complete Analysis**: See [docs/GAS_BENCHMARKS.md](docs/GAS_BENCHMARKS.md) for:
 - Per-function gas breakdown by contract
 - FHE operation overhead comparison
 - Wave 3 → Wave 4 optimization results
@@ -287,9 +287,9 @@ pnpm test
 
 ### Project Documentation
 
-- **[COMPLIANCE.md](backend/COMPLIANCE.md)** - NDPR compliance analysis and data privacy guarantees
-- **[DEPLOYMENT.md](backend/DEPLOYMENT.md)** - Testnet redeployment guide with verification steps
-- **[GAS_BENCHMARKS.md](backend/GAS_BENCHMARKS.md)** - Detailed gas analysis and optimization breakdown
+- **[COMPLIANCE.md](docs/COMPLIANCE.md)** - NDPR compliance analysis and data privacy guarantees
+- **[DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Testnet redeployment guide with verification steps
+- **[GAS_BENCHMARKS.md](docs/GAS_BENCHMARKS.md)** - Detailed gas analysis and optimization breakdown
 
 ### External Resources
  
