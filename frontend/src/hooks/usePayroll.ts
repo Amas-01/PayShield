@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useAccount, usePublicClient, useWaitForTransactionReceipt, useWalletClient, useWriteContract } from "wagmi";
+import { ReineiraSDK, walletClientToSigner } from "@reineira-os/sdk";
 import { CONTRACT_ADDRESSES, ERC20_ABI, PAYSHIELD_PAYROLL_ABI, PAYSHIELD_POOL_ABI, PAYSHIELD_REGISTRY_ABI } from "../lib/config";
 
 type EncryptedInputStruct = {
@@ -198,6 +199,21 @@ export function usePayroll() {
     if (!Number.isFinite(parsed) || parsed <= 0) {
       throw new Error("Enter a valid USDC amount");
     }
+    // Prefer using Reineira SDK when a connected wallet client is available
+    try {
+      if (walletClient) {
+        const signer = await walletClientToSigner(walletClient as any);
+        const sdk = ReineiraSDK.create({ network: "testnet", signer });
+        // sdk.usdc may return a BigInt or a number-like amount — handle both
+        const units = await Promise.resolve(sdk.usdc(parsed));
+        if (typeof units === "bigint") return units;
+        if (typeof units === "number") return BigInt(Math.round(units * 1_000_000));
+        // Fallback to base unit conversion
+      }
+    } catch (e) {
+      // Non-fatal: fallback to local conversion
+    }
+
     return BigInt(Math.round(parsed * 1_000_000));
   };
 
