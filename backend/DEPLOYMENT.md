@@ -1,7 +1,7 @@
 # Deployment & Gas Benchmarks: PayShield Wave 4
 
 **Network**: Arbitrum Sepolia (Chain ID: 421614)  
-**Date**: January 2025  
+**Date**: May 2026  
 **Status**: Production-Ready with Security Hardening
 
 ## Deployment Instructions
@@ -21,7 +21,7 @@
 
 2. **Testnet Funds**:
    - Deployer wallet needs ~0.5 ETH for deployment gas (~100-150k gas for full deployment)
-   - Funds obtained via [Arbitrum Sepolia Faucet](https://faucet.arbitrum.io/)</dev>
+   - Funds obtained via [Arbitrum Sepolia Faucet](https://faucet.arbitrum.io/)
    - USDC obtained via [USDC Faucet](https://www.circle.com/en/usdc) or mint from deployed test contract
 
 ### Deployment Process
@@ -56,7 +56,7 @@
    
    **Example** (PayShieldRegistry):
    ```bash
-   npx hardhat verify --network arbitrumSepolia 0xF59307818AD31c808828E0b55781a383C017b68b
+   npx hardhat verify --network arbitrumSepolia 0x8ABC0Cd2048b617cECd9BA236f7964F828d544dd
    ```
    
    **Note**: ReentrancyGuard will auto-verify via OpenZeppelin contracts plugin.

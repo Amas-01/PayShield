@@ -34,7 +34,7 @@ export function useFHE() {
     }
   };
 
-  const decryptNetPay = async (ciphertextHandle: string, retryCount = 0): Promise<string | null> => {
+  const decryptNetPay = async (ciphertextHandle: string): Promise<bigint | null> => {
     setFheError("");
     
     try {

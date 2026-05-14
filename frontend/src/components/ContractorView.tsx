@@ -58,7 +58,7 @@ function ContractorView() {
       setStatus(`Requesting decryption from FHE network... (Attempt ${attempt}/${MAX_DECRYPT_RETRIES})`);
       const decrypted = await decryptNetPay(handle);
       
-      if (decrypted && decrypted !== "null") {
+      if (decrypted !== null) {
         setDecryptedPay(decrypted.toString());
         setStatus("Decryption complete");
         setRetryCount(0);
