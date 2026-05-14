@@ -277,7 +277,7 @@ pnpm test
 | **Wave 2** | Basic Testing | ✅ Complete | Initial test suite | 6 |
 | **Wave 3** | Pool Integration | ✅ Complete | Pool contract, fund management | 10 |
 | **Wave 4** | 🔐 **Security Hardening** | ✅ **Complete** | **ReentrancyGuard, custom errors, access control, FHE error handling, retry logic, compliance docs** | **34** |
-| **Wave 5** | *Future: Multi-sig governance and USDC bridging* | ⏳ Planned | Multi-sig escrow, approval flows and Cross-chain settlement | TBD |
+| **Wave 5** | *Final expansion wave* | ⏳ Planned | Multi-sig governance, USDC bridging, cross-chain settlement, and post-launch hardening | TBD |
 
 ---
 

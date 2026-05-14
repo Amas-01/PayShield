@@ -4,6 +4,11 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "cofhejs/node": "cofhejs/web",
+    },
+  },
   plugins: [
     react(),
     {

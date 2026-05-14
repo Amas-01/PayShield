@@ -15,7 +15,14 @@ function PoolFunding() {
   const { address: employerAddress } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
-  const { prepareStablecoinDisbursement, depositToPoolWithStatus, getFeeOverrides } = usePayroll();
+  const {
+    prepareStablecoinDisbursement,
+    depositToPoolWithStatus,
+    fundPayrollEscrowWithReineira,
+    getFeeOverrides,
+    reineiraInitStatus,
+    reineiraInitMessage,
+  } = usePayroll();
 
   // Fetch token address and balance/allowance
   useEffect(() => {
@@ -126,12 +133,20 @@ function PoolFunding() {
 
   const onDeposit = async () => {
     try {
-      setStatus("Preparing Reineira USDC units...");
-      const baseUnits = await prepareStablecoinDisbursement(amount);
+      setStatus("Preparing Reineira funding flow...");
 
-      await depositToPoolWithStatus(baseUnits, setStatus);
-      setStatus(`Pool funded with ${amount} USDC`);
-      // Refresh balance and allowance after successful deposit
+      if (reineiraInitStatus === "done") {
+        await fundPayrollEscrowWithReineira(amount, setStatus);
+        setStatus(`Reineira escrow funded with ${amount} USDC`);
+      } else {
+        setStatus("Preparing Reineira USDC units...");
+        const baseUnits = await prepareStablecoinDisbursement(amount);
+
+        await depositToPoolWithStatus(baseUnits, setStatus);
+        setStatus(`Pool funded with ${amount} USDC`);
+      }
+
+      // Refresh balance and allowance after successful funding
       setTimeout(() => refreshBalanceAndAllowance(), 1500);
     } catch (error) {
       setStatus(formatUserError(error));
@@ -151,6 +166,10 @@ function PoolFunding() {
         border: "1px solid rgba(139, 92, 246, 0.2)",
         marginBottom: "0.75rem",
       }}>
+        <p style={{ margin: "0 0 0.4rem 0", fontSize: "0.85rem", color: "#94a3b8" }}>Reineira SDK Status</p>
+        <div className={`status-pill status-pill--${reineiraInitStatus === "done" ? "success" : reineiraInitStatus === "starting" ? "idle" : reineiraInitStatus === "error" ? "error" : "idle"}`} style={{ marginBottom: "0.6rem" }}>
+          {reineiraInitMessage}
+        </div>
         <p style={{ margin: "0 0 0.6rem 0", fontSize: "0.85rem", color: "#94a3b8" }}>Test Token Status</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.6rem" }}>
           <div>

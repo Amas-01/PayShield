@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAccount, usePublicClient, useWaitForTransactionReceipt, useWalletClient, useWriteContract } from "wagmi";
 import { ReineiraSDK, walletClientToSigner } from "@reineira-os/sdk";
 import { CONTRACT_ADDRESSES, ERC20_ABI, PAYSHIELD_PAYROLL_ABI, PAYSHIELD_POOL_ABI, PAYSHIELD_REGISTRY_ABI } from "../lib/config";
@@ -12,6 +12,7 @@ type EncryptedInputStruct = {
 
 type SubmitPayrollStatusHandler = (status: string) => void;
 type DepositStatusHandler = (status: string) => void;
+type ReineiraInitStatus = "idle" | "starting" | "done" | "error";
 
 export function usePayroll() {
   const { data: walletClient } = useWalletClient();
@@ -20,6 +21,64 @@ export function usePayroll() {
   const { writeContractAsync, data: hash, isPending } = useWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash });
   const [payrollError, setPayrollError] = useState<string>("");
+  const [reineiraSdk, setReineiraSdk] = useState<any | null>(null);
+  const [reineiraInitStatus, setReineiraInitStatus] = useState<ReineiraInitStatus>("idle");
+  const [reineiraInitMessage, setReineiraInitMessage] = useState("Reineira SDK idle");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      if (!walletClient) {
+        setReineiraSdk(null);
+        setReineiraInitStatus("idle");
+        setReineiraInitMessage("Connect a wallet to warm up Reineira");
+        return;
+      }
+
+      setReineiraInitStatus("starting");
+      setReineiraInitMessage("Starting Reineira FHE warmup...");
+
+      try {
+        const signer = await walletClientToSigner(walletClient as any);
+        const sdk = ReineiraSDK.create({
+          network: "testnet",
+          signer,
+          onFHEInit: (status) => {
+            if (cancelled) return;
+
+            if (status === "starting") {
+              setReineiraInitStatus("starting");
+              setReineiraInitMessage("Warming up Reineira FHE services...");
+            } else if (status === "done") {
+              setReineiraInitStatus("done");
+              setReineiraInitMessage("Reineira SDK ready");
+            } else {
+              setReineiraInitStatus("error");
+              setReineiraInitMessage("Reineira FHE warmup failed");
+            }
+          },
+        });
+
+        if (cancelled) return;
+
+        setReineiraSdk(sdk);
+        setReineiraInitMessage("Reineira SDK initialized");
+      } catch {
+        if (cancelled) return;
+
+        setReineiraSdk(null);
+        setReineiraInitStatus("error");
+        setReineiraInitMessage("Failed to initialize Reineira SDK");
+      }
+    };
+
+    void bootstrap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [walletClient]);
 
   const decodeCustomError = (errorData: string): string => {
     // Custom error signature -> message mapping
@@ -199,22 +258,35 @@ export function usePayroll() {
     if (!Number.isFinite(parsed) || parsed <= 0) {
       throw new Error("Enter a valid USDC amount");
     }
-    // Prefer using Reineira SDK when a connected wallet client is available
-    try {
-      if (walletClient) {
-        const signer = await walletClientToSigner(walletClient as any);
-        const sdk = ReineiraSDK.create({ network: "testnet", signer });
-        // sdk.usdc may return a BigInt or a number-like amount — handle both
-        const units = await Promise.resolve(sdk.usdc(parsed));
-        if (typeof units === "bigint") return units;
-        if (typeof units === "number") return BigInt(Math.round(units * 1_000_000));
-        // Fallback to base unit conversion
-      }
-    } catch (e) {
-      // Non-fatal: fallback to local conversion
+
+    if (reineiraSdk) {
+      return reineiraSdk.usdc(parsed);
     }
 
     return BigInt(Math.round(parsed * 1_000_000));
+  };
+
+  const fundPayrollEscrowWithReineira = async (amount: string, onStatusChange?: DepositStatusHandler) => {
+    setPayrollError("");
+
+    if (!reineiraSdk || !walletClient || !employerAddress) {
+      throw new Error("Connect wallet and wait for Reineira initialization before funding via escrow");
+    }
+
+    onStatusChange?.("Preparing Reineira escrow funding...");
+    const baseUnits = reineiraSdk.usdc(amount);
+
+    onStatusChange?.("Creating Reineira escrow vault...");
+    const escrow = await reineiraSdk.escrow.create({
+      amount: baseUnits,
+      owner: CONTRACT_ADDRESSES.pool,
+    });
+
+    onStatusChange?.("Auto-approving and funding escrow...");
+    const result = await escrow.fund(baseUnits, { autoApprove: true });
+
+    onStatusChange?.("Reineira escrow funded successfully");
+    return result;
   };
 
   const depositToPool = async (amount: bigint) => {
@@ -354,11 +426,14 @@ export function usePayroll() {
     isConfigured,
     receipt,
     payrollError,
+    reineiraInitStatus,
+    reineiraInitMessage,
     clearError,
     getFeeOverrides,
     submitPayroll,
     confirmPayroll,
     prepareStablecoinDisbursement,
+    fundPayrollEscrowWithReineira,
     depositToPool,
     depositToPoolWithStatus,
   };
