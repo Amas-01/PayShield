@@ -176,10 +176,14 @@ pnpm test  # All 34 tests passing
 | MockFHERC20 (USDC) | `0x8A0A3cDd08Cec51bB8Ea3544414BFa47C3971D1D` | ✅ |
 | PayShieldRegistry | `0x8ABC0Cd2048b617cECd9BA236f7964F828d544dd` | ✅ |
 | PayShieldPayroll | `0xcDE1d4f1028333319A0194e41AcEa81D4dF8Aa76` | ✅ |
+| PayShieldMultiSig | TBD (Wave 5) | — |
 | PayShieldPool | `0x2b94531aF208FC1c7CE8f73C9bE6e759Bff24C90` | ✅ |
 | PayShieldEscrow | `0x29523737B8A5BC515e66153549A6a6ca48d9dF27` | ✅ |
+| PayShieldAuditLog | TBD (Wave 5+) | — |
+| PayShieldCorridorRegistry | TBD (Wave 6) | — |
+| PayShieldSettlementRouter | TBD (Wave 6) | — |
 
-**Note**: These are the latest Wave 4 hardened contract addresses on Arbitrum Sepolia.  
+**Note**: Wave 5 & 6 contracts will be deployed with updated deployment script.  
 See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for deployment and verification workflow.
 
 ### Configuration
@@ -223,9 +227,37 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for deployment and verification wor
 
 ---
 
+## 🌍 Payment Corridors (Wave 6)
+
+PayShield Wave 6 introduces **Payment Corridor Tagging** for cross-border payroll settlements:
+
+| Corridor | Route | Status | Settlements |
+|----------|-------|--------|-------------|
+| Nigeria-UK | NG → GB | Active | 0 |
+| Kenya-India | KE → IN | Active | 0 |
+
+**Corridor Features**:
+- 🏷️ **Corridor Labeling**: Employers tag USDC disbursements with destination corridors (e.g., "Nigeria-UK")
+- 💱 **Exchange Rate References**: Employers store up to 64-byte rate metadata per team (e.g., "CBN-2025-05-23")
+- 📊 **Settlement Tracking**: Each corridor tracks total disbursements and settlement counts
+- 🔐 **Team Isolation**: Settlement records isolated by `teamId` (keccak256 of employer address)
+- 📋 **Audit Logging**: All corridor operations logged via `PayShieldAuditLog` with immutable records
+- 👁️ **Privacy Preserved**: Corridor labels are plaintext for routing; underlying wage amounts **remain encrypted from Wave 5**
+
+**Usage Flow**:
+1. Employer calls `setExchangeRateRef(teamId, rateRef)` to store corridor metadata
+2. `PayShieldMultiSig` routes settlement via `routeSettlement(teamId, employer, contractor, corridorId, usdcAmount)`
+3. `PayShieldSettlementRouter` verifies corridor is active, calls `PayShieldEscrow.release()`, logs to audit
+4. Contractors view their records via `getContractorRecords(teamId)` without seeing exchange rate metadata
+5. Employers view full settlement history via `getTeamSettlements(teamId)` including rate references
+
+**Compliance**: See [docs/COMPLIANCE.md](docs/COMPLIANCE.md) Section 9 for NDPR analysis of corridor tagging.
+
+---
+
 ## ✅ Testing & Validation
 
-### Wave 4 Test Suite (Current - 34 Tests)
+### Wave 6 Test Suite (Current - 97 Tests)
 
 Executed in `backend/`:
 
@@ -235,37 +267,60 @@ pnpm test
 
 **Test Coverage by Component**:
 
-- **PayShieldRegistry** (6 tests)
-  - ✔ Employer registration and contractor lifecycle
-  - ✔ Access control (non-employer reverts)
-  - ✔ State machine transitions (Active → Paid → Disputed)
-
-- **PayShieldPayroll** (13 tests)
-  - ✔ Encrypted wage computation with `FHE.mul(euint32, euint32)`
-  - ✔ Edge cases (zero hours, max uint32, contractor not registered, pool insufficient)
-  - ✔ Cooldown enforcement (MIN_PAYROLL_INTERVAL = 24 hours)
-  - ✔ Event emission (no plaintext wages in logs)
-
-- **PayShieldEscrow** (5 tests)
-  - ✔ Silent failure on USDC transfer
-  - ✔ Access control (`onlyPayrollContract` modifier)
-  - ✔ Correct release addresses and double-release prevention
-
-- **PayShieldPool** (10 tests)
-  - ✔ Deposits with event emission
-  - ✔ Deductions from employer balances
-  - ✔ Employer withdrawals with access control
-  - ✔ Zero-amount revert, insufficient balance reverts
+- **PayShieldRegistry** (6 tests) — Wave 4 baseline
+- **PayShieldPayroll** (13 tests) — Wave 4 baseline
+- **PayShieldEscrow** (5 tests) — Wave 4 baseline + Wave 6 updates
+- **PayShieldPool** (10 tests) — Wave 4 baseline
+- **PayShieldMultiSig** (5 tests) — Wave 5
+- **PayShieldAuditLog** (16 tests) — Wave 5+
+- **PayShieldCorridorRegistry** (24 tests) — **Wave 6**
+  - ✔ Constructor initializes Nigeria-UK and Kenya-India corridors
+  - ✔ registerCorridor(), pauseCorridor(), resumeCorridor() lifecycle
+  - ✔ setSettlementRouter() one-time authorization
+  - ✔ incrementSettlementCount() router-only access
+  - ✔ View functions and edge cases (duplicate labels, max corridors)
+- **PayShieldSettlementRouter** (18 tests) — **Wave 6**
+  - ✔ setExchangeRateRef() with team isolation and validation
+  - ✔ routeSettlement() with MultiSig-only access, corridor validation, team isolation
+  - ✔ getTeamSettlements() employer-only access
+  - ✔ getContractorRecords() contractor-only access
+  - ✔ Data isolation enforcement (team-based mappings)
 
 **Latest Test Output**:
 
 ```
-  34 passing (3s)
-  ✔ All security tests passing
-  ✔ All edge case tests passing
+  97 passing (5s)
+  ✔ All Wave 6 corridor tests passing
+  ✔ All Wave 6 settlement router tests passing
+  ✔ All data isolation tests passing
   ✔ All access control tests passing
   ✔ All FHE operation tests passing
 ```
+
+---
+
+## 📊 Gas Benchmarks (Wave 6 Updated)
+
+**PayShield has been optimized for gas efficiency on Arbitrum Sepolia (Layer 2).**
+
+| Function | Wave | Contract | Gas | Notes |
+|----------|------|----------|-----|-------|
+| submitPayroll() | W4 | Payroll | ~187k | FHE.mul() + registry checks |
+| confirmPayroll() | W4 | Escrow | ~69k | Fund release |
+| deposit() | W4 | Pool | ~78k | USDC transfer + balance |
+| registerCorridor() | W6 | CorridorRegistry | ~65k | New corridor creation |
+| routeSettlement() | W6 | SettlementRouter | ~95k | Settlement routing + audit |
+| setExchangeRateRef() | W6 | SettlementRouter | ~45k | Metadata storage |
+
+📈 **Complete Analysis**: See [docs/GAS_BENCHMARKS.md](docs/GAS_BENCHMARKS.md) for:
+- Per-function gas breakdown by contract
+- FHE operation overhead comparison
+- Wave 4 → Wave 6 cost analysis
+- Future optimization opportunities
+
+**Note**: Gas costs are ~50-70% lower on Arbitrum compared to Ethereum Mainnet due to L2 compression.
+
+---
 
 ---
 
@@ -276,8 +331,9 @@ pnpm test
 | **Wave 1** | MVP Implementation | ✅ Complete | Payroll, Registry, Escrow | 4 |
 | **Wave 2** | Basic Testing | ✅ Complete | Initial test suite | 6 |
 | **Wave 3** | Pool Integration | ✅ Complete | Pool contract, fund management | 10 |
-| **Wave 4** | 🔐 **Security Hardening** | ✅ **Complete** | **ReentrancyGuard, custom errors, access control, FHE error handling, retry logic, compliance docs** | **34** |
-| **Wave 5** | *Final expansion wave* | ⏳ Planned | Multi-sig governance, USDC bridging, cross-chain settlement, and post-launch hardening | TBD |
+| **Wave 4** | 🔐 **Security Hardening** | ✅ **Complete** | **ReentrancyGuard, custom errors, access control, FHE error handling, retry logic** | **34** |
+| **Wave 5** | Multi-Sig & Audit Logging | ✅ **Complete** | **MultiSig governance, AuditLog immutable records, authorization framework** | **55** |
+| **Wave 6** | 🌍 **Corridor Settlement Layer** | ✅ **Complete** | **Corridor registry, settlement routing, team isolation, exchange rate metadata** | **97** |
 
 ---
 

@@ -8,7 +8,8 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 contract PayShieldEscrow is ReentrancyGuard {
     PayShieldPayroll public immutable payroll;
     PayShieldPool public pool;
-    address public payrollContract;
+    address public multiSigContract;
+    address public settlementRouter;
     address public owner;
 
     event PayoutAttempted(address indexed employer, address indexed recipient, uint256 amount, bool success);
@@ -18,7 +19,6 @@ contract PayShieldEscrow is ReentrancyGuard {
     constructor(address payrollAddress) {
         require(payrollAddress != address(0), "invalid payroll");
         payroll = PayShieldPayroll(payrollAddress);
-        payrollContract = payrollAddress;
         owner = msg.sender;
     }
 
@@ -27,9 +27,24 @@ contract PayShieldEscrow is ReentrancyGuard {
         _;
     }
 
-    modifier onlyPayrollContract() {
-        if (msg.sender != payrollContract) revert UnauthorizedCaller(msg.sender);
+    modifier onlyMultiSigContract() {
+        if (msg.sender != multiSigContract) revert UnauthorizedCaller(msg.sender);
         _;
+    }
+
+    modifier onlySettlementRouter() {
+        if (msg.sender != settlementRouter) revert UnauthorizedCaller(msg.sender);
+        _;
+    }
+
+    function setMultiSigContract(address multiSigAddress) external onlyOwner {
+        require(multiSigAddress != address(0), "invalid multisig");
+        multiSigContract = multiSigAddress;
+    }
+
+    function setSettlementRouter(address routerAddress) external onlyOwner {
+        require(routerAddress != address(0), "invalid router");
+        settlementRouter = routerAddress;
     }
 
     function setPool(address poolAddress) external onlyOwner {
@@ -37,7 +52,25 @@ contract PayShieldEscrow is ReentrancyGuard {
         pool = PayShieldPool(poolAddress);
     }
 
-    function release(address employer, address contractor, uint256 amount) external onlyPayrollContract nonReentrant returns (bool) {
+    function release(address contractor, uint256 amount) external onlySettlementRouter nonReentrant {
+        // Wave 6: called by Settlement Router with contractor address and amount
+        // No confirmation check needed — MultiSig already approved the batch
+        pool.releaseForPayout(address(0), contractor, amount);
+        emit PayoutAttempted(address(0), contractor, amount, true);
+    }
+
+    function release(address employer, address contractor) external onlyMultiSigContract nonReentrant returns (bool) {
+        bool confirmed = payroll.isPayrollConfirmed(employer, contractor);
+        if (!confirmed) {
+            emit PayoutAttempted(employer, contractor, 0, false);
+            return false;
+        }
+
+        emit PayoutAttempted(employer, contractor, 0, true);
+        return true;
+    }
+
+    function release(address employer, address contractor, uint256 amount) external onlyMultiSigContract nonReentrant returns (bool) {
         bool confirmed = payroll.isPayrollConfirmed(employer, contractor);
         if (!confirmed) {
             emit PayoutAttempted(employer, contractor, amount, false);

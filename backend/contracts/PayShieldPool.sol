@@ -13,6 +13,7 @@ contract PayShieldPool is ReentrancyGuard {
     address public escrow;
     IFHERC20 public immutable usdc;
     address public payrollContract;
+    address public auditLog;
 
     mapping(address employer => uint256 balance) public employerBalances;
     mapping(address => uint256) public reservedBalances;
@@ -49,6 +50,11 @@ contract PayShieldPool is ReentrancyGuard {
         require(escrowAddress != address(0), "invalid escrow");
         escrow = escrowAddress;
         emit EscrowUpdated(escrowAddress);
+    }
+
+    function setAuditLog(address auditLogAddress) external onlyOwner {
+        require(auditLogAddress != address(0), "invalid audit log");
+        auditLog = auditLogAddress;
     }
 
     function deposit(uint256 amount) external nonReentrant {
