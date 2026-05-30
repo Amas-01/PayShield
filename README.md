@@ -171,36 +171,41 @@ pnpm test  # All 34 tests passing
 
 ### Current Deployed Addresses (Arbitrum Sepolia)
 
-| Contract | Address | Verified |
-|----------|---------|----------|
-| MockFHERC20 (USDC) | `0x8A0A3cDd08Cec51bB8Ea3544414BFa47C3971D1D` | ✅ |
-| PayShieldRegistry | `0x8ABC0Cd2048b617cECd9BA236f7964F828d544dd` | ✅ |
-| PayShieldPayroll | `0xcDE1d4f1028333319A0194e41AcEa81D4dF8Aa76` | ✅ |
-| PayShieldMultiSig | TBD (Wave 5) | — |
-| PayShieldPool | `0x2b94531aF208FC1c7CE8f73C9bE6e759Bff24C90` | ✅ |
-| PayShieldEscrow | `0x29523737B8A5BC515e66153549A6a6ca48d9dF27` | ✅ |
-| PayShieldAuditLog | TBD (Wave 5+) | — |
-| PayShieldCorridorRegistry | TBD (Wave 6) | — |
-| PayShieldSettlementRouter | TBD (Wave 6) | — |
+| Contract | Address | Deployed | Verified |
+|----------|---------|----------|----------|
+| MockFHERC20 (USDC) | `0x8A0A3cDd08Cec51bB8Ea3544414BFa47C3971D1D` | ✅ | ✅ |
+| PayShieldAuditLog | `0x48442F565683E7D34C2aB197f8196b8e2BB11c62` | ✅ | ⏳ |
+| PayShieldRegistry | `0x25F8cAa0C6942A5B01f253EBfbf9e24d4368F1eC` | ✅ | ✅ |
+| PayShieldPayroll | `0xd2197d44A153a76B8784d23Df1034a5F80fC3675` | ✅ | ⏳ |
+| PayShieldMultiSig | `0x273544fFF7f7b7a80d37D12d9C4EEb1C91cEa133` | ✅ | ⏳ |
+| PayShieldPool | `0x5bE4b774b1bae31992bF2e2CD9aab6a7Ee0e71F3` | ✅ | ✅ |
+| PayShieldEscrow | `0x0a0D6b01F61EA7e50208414b9D015320160F4D99` | ✅ | ⏳ |
+| PayShieldCorridorRegistry | `0xD9a6Ae51dcfb5969e38a628a67999Dc0A750c4B7` | ✅ | ⏳ |
+| PayShieldSettlementRouter | `0xC034ce5f034c4f39EF775b055c9B361fD76b0937` | ✅ | ⏳ |
 
-**Note**: Wave 5 & 6 contracts will be deployed with updated deployment script.  
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for deployment and verification workflow.
+**Deployment Date**: May 29, 2026  
+**Network**: Arbitrum Sepolia (Chain ID: 421614)  
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for deployment verification workflow.
 
 ### Configuration
 
 - `backend/.env`:
   ```
   USDC_ADDRESS=0x8A0A3cDd08Cec51bB8Ea3544414BFa47C3971D1D
-  PAYSHIELD_POOL_ADDRESS=0x2b94531aF208FC1c7CE8f73C9bE6e759Bff24C90
-  PAYSHIELD_ESCROW_ADDRESS=0x29523737B8A5BC515e66153549A6a6ca48d9dF27
+  PAYSHIELD_POOL_ADDRESS=0x5bE4b774b1bae31992bF2e2CD9aab6a7Ee0e71F3
+  PAYSHIELD_ESCROW_ADDRESS=0x0a0D6b01F61EA7e50208414b9D015320160F4D99
   ```
 
 - `frontend/.env`:
   ```
-  VITE_PAYSHIELD_REGISTRY_ADDRESS=0x8ABC0Cd2048b617cECd9BA236f7964F828d544dd
-  VITE_PAYSHIELD_PAYROLL_ADDRESS=0xcDE1d4f1028333319A0194e41AcEa81D4dF8Aa76
-  VITE_PAYSHIELD_POOL_ADDRESS=0x2b94531aF208FC1c7CE8f73C9bE6e759Bff24C90
-  VITE_PAYSHIELD_ESCROW_ADDRESS=0x29523737B8A5BC515e66153549A6a6ca48d9dF27
+- VITE_PAYSHIELD_AUDITLOG_ADDRESS=0x48442F565683E7D34C2aB197f8196b8e2BB11c62
+  VITE_PAYSHIELD_REGISTRY_ADDRESS=0x25F8cAa0C6942A5B01f253EBfbf9e24d4368F1eC
+  VITE_PAYSHIELD_PAYROLL_ADDRESS=0xd2197d44A153a76B8784d23Df1034a5F80fC3675
+  VITE_PAYSHIELD_MULTISIG_ADDRESS=0x273544fFF7f7b7a80d37D12d9C4EEb1C91cEa133
+  VITE_PAYSHIELD_POOL_ADDRESS=0x5bE4b774b1bae31992bF2e2CD9aab6a7Ee0e71F3
+  VITE_PAYSHIELD_ESCROW_ADDRESS=0x0a0D6b01F61EA7e50208414b9D015320160F4D99
+  VITE_PAYSHIELD_CORRIDOR_REGISTRY_ADDRESS=0xD9a6Ae51dcfb5969e38a628a67999Dc0A750c4B7
+  VITE_PAYSHIELD_SETTLEMENT_ROUTER_ADDRESS=0xC034ce5f034c4f39EF775b055c9B361fD76b0937
   ```
 
 ---
@@ -227,9 +232,9 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for deployment and verification wor
 
 ---
 
-## 🌍 Payment Corridors (Wave 6)
+## 🌍 Payment Corridors (Wave 5)
 
-PayShield Wave 6 introduces **Payment Corridor Tagging** for cross-border payroll settlements:
+PayShield Wave 5 includes **Payment Corridor Tagging** for cross-border payroll settlements:
 
 | Corridor | Route | Status | Settlements |
 |----------|-------|--------|-------------|
@@ -257,7 +262,7 @@ PayShield Wave 6 introduces **Payment Corridor Tagging** for cross-border payrol
 
 ## ✅ Testing & Validation
 
-### Wave 6 Test Suite (Current - 97 Tests)
+### Wave 5 Test Suite (Current - 97 Tests)
 
 Executed in `backend/`:
 
@@ -273,13 +278,13 @@ pnpm test
 - **PayShieldPool** (10 tests) — Wave 4 baseline
 - **PayShieldMultiSig** (5 tests) — Wave 5
 - **PayShieldAuditLog** (16 tests) — Wave 5+
-- **PayShieldCorridorRegistry** (24 tests) — **Wave 6**
+- **PayShieldCorridorRegistry** (24 tests) — **Wave 5**
   - ✔ Constructor initializes Nigeria-UK and Kenya-India corridors
   - ✔ registerCorridor(), pauseCorridor(), resumeCorridor() lifecycle
   - ✔ setSettlementRouter() one-time authorization
   - ✔ incrementSettlementCount() router-only access
   - ✔ View functions and edge cases (duplicate labels, max corridors)
-- **PayShieldSettlementRouter** (18 tests) — **Wave 6**
+- **PayShieldSettlementRouter** (18 tests) — **Wave 5**
   - ✔ setExchangeRateRef() with team isolation and validation
   - ✔ routeSettlement() with MultiSig-only access, corridor validation, team isolation
   - ✔ getTeamSettlements() employer-only access
@@ -299,7 +304,7 @@ pnpm test
 
 ---
 
-## 📊 Gas Benchmarks (Wave 6 Updated)
+## 📊 Gas Benchmarks (Wave 5 - Current)
 
 **PayShield has been optimized for gas efficiency on Arbitrum Sepolia (Layer 2).**
 
@@ -308,14 +313,14 @@ pnpm test
 | submitPayroll() | W4 | Payroll | ~187k | FHE.mul() + registry checks |
 | confirmPayroll() | W4 | Escrow | ~69k | Fund release |
 | deposit() | W4 | Pool | ~78k | USDC transfer + balance |
-| registerCorridor() | W6 | CorridorRegistry | ~65k | New corridor creation |
-| routeSettlement() | W6 | SettlementRouter | ~95k | Settlement routing + audit |
-| setExchangeRateRef() | W6 | SettlementRouter | ~45k | Metadata storage |
+| registerCorridor() | W5 | CorridorRegistry | ~65k | New corridor creation |
+| routeSettlement() | W5 | SettlementRouter | ~95k | Settlement routing + audit |
+| setExchangeRateRef() | W5 | SettlementRouter | ~45k | Metadata storage |
 
 📈 **Complete Analysis**: See [docs/GAS_BENCHMARKS.md](docs/GAS_BENCHMARKS.md) for:
 - Per-function gas breakdown by contract
 - FHE operation overhead comparison
-- Wave 4 → Wave 6 cost analysis
+- Wave 4 → Wave 5 cost analysis
 - Future optimization opportunities
 
 **Note**: Gas costs are ~50-70% lower on Arbitrum compared to Ethereum Mainnet due to L2 compression.
@@ -331,9 +336,8 @@ pnpm test
 | **Wave 1** | MVP Implementation | ✅ Complete | Payroll, Registry, Escrow | 4 |
 | **Wave 2** | Basic Testing | ✅ Complete | Initial test suite | 6 |
 | **Wave 3** | Pool Integration | ✅ Complete | Pool contract, fund management | 10 |
-| **Wave 4** | 🔐 **Security Hardening** | ✅ **Complete** | **ReentrancyGuard, custom errors, access control, FHE error handling, retry logic** | **34** |
-| **Wave 5** | Multi-Sig & Audit Logging | ✅ **Complete** | **MultiSig governance, AuditLog immutable records, authorization framework** | **55** |
-| **Wave 6** | 🌍 **Corridor Settlement Layer** | ✅ **Complete** | **Corridor registry, settlement routing, team isolation, exchange rate metadata** | **97** |
+| **Wave 4** | 🔐 **Security Hardening** | ✅ **Complete** | **ReentrancyGuard, custom errors, access control, FHE error handling** | **34** |
+| **Wave 5** | 🌍 **Multi-Sig, Audit & Corridor Settlement** | ✅ **Complete** | **MultiSig governance, AuditLog, CorridorRegistry, SettlementRouter, team isolation** | **97** |
 
 ---
 

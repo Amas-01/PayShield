@@ -321,19 +321,246 @@ interface AuditLogViewerProps {
 - Export to JSON
 - Search by action type
 
-## Deployment Addresses (After Wave 5 Deploy)
+## Deployment Addresses (Wave 5 - May 29, 2026)
 
 ```typescript
 // deployments/arbitrum-sepolia.json
 export const ADDRESSES = {
-  PayShieldAuditLog: "0x...",
-  PayShieldRegistry: "0x...",
-  PayShieldPayroll: "0x...",
-  PayShieldMultiSig: "0x...",
-  PayShieldEscrow: "0x...",
-  PayShieldPool: "0x..."
+  // Wave 4
+  PayShieldRegistry: "0x25F8cAa0C6942A5B01f253EBfbf9e24d4368F1eC",
+  PayShieldPayroll: "0xd2197d44A153a76B8784d23Df1034a5F80fC3675",
+  PayShieldEscrow: "0x0a0D6b01F61EA7e50208414b9D015320160F4D99",
+  PayShieldPool: "0x5bE4b774b1bae31992bF2e2CD9aab6a7Ee0e71F3",
+   
+  // Wave 5
+  PayShieldAuditLog: "0x48442F565683E7D34C2aB197f8196b8e2BB11c62",
+  PayShieldMultiSig: "0x273544fFF7f7b7a80d37D12d9C4EEb1C91cEa133",
+  PayShieldCorridorRegistry: "0xD9a6Ae51dcfb5969e38a628a67999Dc0A750c4B7",
+  PayShieldSettlementRouter: "0xC034ce5f034c4f39EF775b055c9B361fD76b0937"
 }
 ```
+
+---
+
+## PayShieldCorridorRegistry Interface (Wave 5 New)
+
+### State Queries
+
+```solidity
+// Get corridor count
+function corridorCount() → uint256
+
+// Get corridor by index
+function getCorridor(uint256 index) → Corridor memory
+  // Corridor {
+  //   bytes32 corridorId,
+  //   string label,           // e.g., "Nigeria-UK"
+  //   string sourceRegion,    // e.g., "NG"
+  //   string destRegion,      // e.g., "GB"
+  //   bool active,
+  //   uint256 registeredAt,
+  //   uint256 totalSettlements
+  // }
+
+// Check if corridor is active
+function isActive(bytes32 corridorId) → bool
+
+// Get all corridors
+function getAllCorridors() → Corridor[] memory
+```
+
+### State-Modifying Functions (Owner Only)
+
+```solidity
+// Register a new payment corridor
+function registerCorridor(string label, string sourceRegion, string destRegion)
+// Emits: CorridorRegistered(corridorId, label, active)
+
+// Pause a corridor (stop new settlements)
+function pauseCorridor(bytes32 corridorId)
+// Emits: CorridorPaused(corridorId)
+
+// Resume a paused corridor
+function resumeCorridor(bytes32 corridorId)
+// Emits: CorridorResumed(corridorId)
+
+// Authorize SettlementRouter (one-time)
+function setSettlementRouter(address router)
+// Emits: SettlementRouterSet(router)
+```
+
+### State-Modifying Functions (SettlementRouter Only)
+
+```solidity
+// Increment settlement counter for a corridor
+function incrementSettlementCount(bytes32 corridorId)
+```
+
+---
+
+## PayShieldSettlementRouter Interface (Wave 5 New)
+
+### Settlement Record Structure
+
+```solidity
+record SettlementRecord {
+  uint256 recordId,
+  bytes32 teamId,              // keccak256(employer)
+  address employer,
+  address contractor,
+  bytes32 corridorId,
+  string corridorLabel,        // e.g., "Nigeria-UK"
+  string exchangeRateRef,      // max 64 bytes, e.g., "CBN-2025-05-30"
+  uint256 usdcAmount,
+  uint256 settledAt,
+  bool released
+}
+```
+
+### State-Modifying Functions (Employer Only)
+
+```solidity
+// Set exchange rate reference for team
+function setExchangeRateRef(bytes32 teamId, string rateRef)
+// Validates: caller's derived teamId matches provided teamId
+// Validates: rateRef length <= 64 bytes
+// Emits: ExchangeRateRefSet(teamId, rateRef)
+```
+
+### State-Modifying Functions (MultiSig Only)
+
+```solidity
+// Route a settlement through a corridor to escrow
+function routeSettlement(
+  bytes32 teamId,
+  address employer,
+  address contractor,
+  bytes32 corridorId,
+  uint256 usdcAmount
+)
+// Validates: teamId matches keccak256(employer)
+// Validates: corridor is active
+// Calls: escrow.release(contractor, usdcAmount)
+// Calls: corridorRegistry.incrementSettlementCount(corridorId)
+// Calls: auditLog.log(..., ACTION_SETTLEMENT_ROUTED, ...)
+// Emits: SettlementRouted(teamId, contractor, corridorId, usdcAmount, recordId)
+```
+
+### View Functions
+
+```solidity
+// Get all settlements for a team (Employer only)
+function getTeamSettlements(bytes32 teamId) → SettlementRecord[] memory
+// Enforces: caller's derived teamId matches provided teamId
+// Returns: full records INCLUDING exchangeRateRef
+
+// Get contractor's settlement records (Contractor only)
+function getContractorRecords(bytes32 teamId, address contractor) → SettlementRecord[] memory
+// Enforces: caller == contractor
+// Returns: records WITHOUT exchangeRateRef (data isolation)
+
+// Get total settlement count for a team
+function getSettlementCount(bytes32 teamId) → uint256
+```
+
+--- 
+
+## Frontend Hooks for Wave 5 (Corridor & Settlement)
+
+### useCorridorSettlement Hook
+
+```typescript
+interface UseCorridorSettlementReturn {
+  corridors: Corridor[]
+  settlements: SettlementRecord[]
+  loading: boolean
+  error: string | null
+  getSupportedCorridors: () => Promise<void>
+  getTeamSettlements: (teamId: string) => Promise<void>
+  getContractorRecords: (teamId: string, contractorAddress: string) => Promise<void>
+  setExchangeRateRef: (teamId: string, rateRef: string) => Promise<void>
+}
+
+export function useCorridorSettlement(): UseCorridorSettlementReturn {
+  // Implementation in frontend/src/hooks/useCorridorSettlement.ts
+}
+```
+
+### Frontend Components (Wave 5)
+
+#### CorridorSelector.tsx
+```typescript
+interface CorridorSelectorProps {
+  selectedCorridorId: string
+  onSelect: (corridorId: string, label: string) => void
+}
+
+// Dropdown component in payroll form to select payment corridor
+```
+
+#### SettlementHistory.tsx
+```typescript
+interface SettlementHistoryProps {
+  teamId: string
+}
+
+// Employer dashboard component showing:
+// - All team settlements with corridor labels
+// - Exchange rate references (visible to employer only)
+// - CSV export functionality
+```
+
+#### ContractorSettlements.tsx
+```typescript
+interface ContractorSettlementsProps {
+  teamId: string
+  contractorAddress: string
+}
+
+// Contractor dashboard component showing:
+// - Settlement records with corridor labels
+// - Amounts and dates
+// - No exchange rate visibility
+// - Summary cards (total, released, pending)
+```
+
+---
+
+## Data Isolation  & Safety
+
+### Team ID Calculation
+
+```typescript
+// Common across all Wave 5 contracts
+function getTeamId(employer: string): string {
+  return ethers.keccak256(
+    ethers.AbiCoder.defaultAbiCoder().encode(
+      ["address"],
+      [employer]
+    )
+  )
+}
+```
+
+### Access Control Enforcement
+
+1. **Employers**: Can only access settlements for their own teamId
+   - Contract verifies: `caller's derived teamId === provided teamId`
+   - Frontend enforces: Only render employer's own teamId data
+
+2. **Contractors**: Can only access their own settlement records
+   - Contract verifies: `caller === contractor address`
+   - Frontend enforces: Hide rate reference data
+
+3. **Corridor Registry**: Owner-only operations
+   - Contract verifies: `msg.sender == owner()`
+   - Frontend enforces: Show management UI only to owner
+
+### Exchange Rate Reference Visibility
+
+- **Plaintext corridors**: "Nigeria-UK", "Kenya-India" (visible to all)
+- **Rate references**: Visible to employer + auditor only (teamId verification)
+- **Contractor view**: No rate data shown (data isolation enforced at contract level)
 
 ## ABI Imports
 

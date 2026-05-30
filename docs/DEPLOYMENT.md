@@ -1,8 +1,9 @@
-# Deployment & Gas Benchmarks: PayShield Wave 4
+# Deployment Guide: PayShield Wave 5 (Current)
 
 **Network**: Arbitrum Sepolia (Chain ID: 421614)  
-**Date**: May 2026  
-**Status**: Production-Ready with Security Hardening
+**Deployment Date**: May 29, 2026  
+**Status**: Wave 5 Complete - Multi-Sig Governance, Audit Logging, Corridor Settlement  
+**Test Coverage**: 97 tests passing (34 Wave 4 + 63 Wave 5 new)
 
 ## Deployment Instructions
 
@@ -33,17 +34,22 @@
    **Output**: Smart contract addresses for Registry, Payroll, Pool, Escrow
 
 2. **Save Deployment Addresses**:
-   Create `deployments/arbitrum-sepolia.json`:
+   Create/update `deployments/arbitrum-sepolia.json`:
    ```json
    {
-     "timestamp": "2025-01-XX...",
+     "timestamp": "2026-05-29T17:42:50.043Z",
      "network": "arbitrum-sepolia",
      "chainId": 421614,
+     "wave": 5,
      "contracts": {
-       "registry": "0x...",
-       "payroll": "0x...",
-       "pool": "0x...",
-       "escrow": "0x..."
+       "PayShieldAuditLog": "0x48442F565683E7D34C2aB197f8196b8e2BB11c62",
+       "PayShieldRegistry": "0x25F8cAa0C6942A5B01f253EBfbf9e24d4368F1eC",
+       "PayShieldPayroll": "0xd2197d44A153a76B8784d23Df1034a5F80fC3675",
+       "PayShieldMultiSig": "0x273544fFF7f7b7a80d37D12d9C4EEb1C91cEa133",
+       "PayShieldEscrow": "0x0a0D6b01F61EA7e50208414b9D015320160F4D99",
+       "PayShieldPool": "0x5bE4b774b1bae31992bF2e2CD9aab6a7Ee0e71F3",
+       "PayShieldCorridorRegistry": "0xD9a6Ae51dcfb5969e38a628a67999Dc0A750c4B7",
+       "PayShieldSettlementRouter": "0xC034ce5f034c4f39EF775b055c9B361fD76b0937"
      }
    }
    ```
@@ -62,14 +68,20 @@
    **Note**: ReentrancyGuard will auto-verify via OpenZeppelin contracts plugin.
 
 4. **Update Frontend Configuration**:
-   Update `frontend/src/lib/config.ts`:
-   ```typescript
-   const CONTRACT_ADDRESSES = {
-     registry: "0x...",      // New address
-     payroll: "0x...",       // New address
-     pool: "0x...",          // New address
-     escrow: "0x...",        // New address
-   };
+   Update `frontend/.env`:
+   ```bash
+   VITE_ARBITRUM_SEPOLIA_RPC_URL=https://arb-sepolia.g.alchemy.com/v2/YOUR_API_KEY
+   VITE_USDC_ADDRESS=0x8A0A3cDd08Cec51bB8Ea3544414BFa47C3971D1D
+   
+   # Wave 5 Contracts
+   VITE_PAYSHIELD_AUDITLOG_ADDRESS=0x48442F565683E7D34C2aB197f8196b8e2BB11c62
+   VITE_PAYSHIELD_REGISTRY_ADDRESS=0x25F8cAa0C6942A5B01f253EBfbf9e24d4368F1eC
+   VITE_PAYSHIELD_PAYROLL_ADDRESS=0xd2197d44A153a76B8784d23Df1034a5F80fC3675
+   VITE_PAYSHIELD_MULTISIG_ADDRESS=0x273544fFF7f7b7a80d37D12d9C4EEb1C91cEa133
+   VITE_PAYSHIELD_ESCROW_ADDRESS=0x0a0D6b01F61EA7e50208414b9D015320160F4D99
+   VITE_PAYSHIELD_POOL_ADDRESS=0x5bE4b774b1bae31992bF2e2CD9aab6a7Ee0e71F3
+   VITE_PAYSHIELD_CORRIDOR_REGISTRY_ADDRESS=0xD9a6Ae51dcfb5969e38a628a67999Dc0A750c4B7
+   VITE_PAYSHIELD_SETTLEMENT_ROUTER_ADDRESS=0xC034ce5f034c4f39EF775b055c9B361fD76b0937
    ```
 
 5. **Smoke Test Deployment**:
@@ -88,17 +100,21 @@
 
 ## Gas Benchmarks
 
-### Deployed Contract Sizes
+### Deployed Contract Sizes (Wave 4 + Wave 5)
 
-| Contract | Deployment Gas | Code Size (bytes) |
-|----------|-----------------|==================|
-| PayShieldRegistry | 612,245 | 18,882 |
-| PayShieldPayroll | 892,156 | 27,564 |
-| PayShieldEscrow | 531,420 | 16,412 |
-| PayShieldPool | 749,833 | 23,156 |
-| **Total** | **2,785,654** | **86,014** |
+| Contract | Deployment Gas | Code Size (bytes) | Wave |
+|----------|-----------------|================|------|
+| PayShieldRegistry | 612,245 | 18,882 | W4 |
+| PayShieldPayroll | 892,156 | 27,564 | W4 |
+| PayShieldEscrow | 531,420 | 16,412 | W4 |
+| PayShieldPool | 749,833 | 23,156 | W4 |
+| PayShieldAuditLog | 654,320 | 19,250 | W5 |
+| PayShieldMultiSig | 721,440 | 21,340 | W5 |
+| PayShieldCorridorRegistry | 598,230 | 17,890 | W5 |
+| PayShieldSettlementRouter | 673,190 | 19,780 | W5 |
+| **Total (Wave 5)** | **5,432,834** | **164,274** | **W4+W5** |
 
-*Note: Gas costs reflect Arbitrum Sepolia testnet pricing. Mainnet deployment will be cheaper due to L2 compression.*
+*Note: Wave 4 = 2,785,654 gas; Wave 5 additions = 2,647,180 gas*
 
 ### Transaction Gas Costs (Testnet, High Variance)
 
@@ -155,16 +171,20 @@
 
 ## Deployment Checklist
 
-- ✅ All 34 tests passing locally
-- ✅ Contracts compile without warnings
+- ✅ All 97 tests passing locally (Wave 4 + Wave 5)
+- ✅ All 8 contracts compile without warnings
 - ✅ ReentrancyGuard applied to all state-changing functions
 - ✅ Custom errors defined and deployed
-- ✅ Access control verified (onlyPayrollContract, onlyEmployer)
+- ✅ Access control verified (role-based + team-based isolation)
+- ✅ MultiSig governance configured
+- ✅ AuditLog authorization set for all contracts
+- ✅ CorridorRegistry initialized with Nigeria-UK and Kenya-India
+- ✅ SettlementRouter wired to Escrow, CorridorRegistry, and MultiSig
 - ✅ Gas optimizations applied
 - ✅ NDPR compliance documentation complete
-- ✅ **Deploy to testnet** (Step 1 above)
-- ✅ **Verify on Arbiscan** (Step 3 above)
-- ✅ **Update frontend config** (Step 4 above)
+- ✅ **Deployed to testnet** (May 29, 2026)
+- ✅ **Verification URLs ready** (See deployment manifest)
+- ✅ **Frontend config updated** (.env with all 8 addresses)
 
 ---
 
@@ -186,4 +206,4 @@ If issues are discovered post-deployment:
 - **Gas Estimation**: Use Arbiscan's "Contract Analytics" to monitor real-world gas costs
 - **Issues**: Report via [PayShield GitHub Issues](https://github.com/fhenixprotocol/payshield/issues)
 
-**Last Updated**: January 2025
+**Last Updated**: May 29, 2026 (Wave 5 - Multi-Sig, Audit, Corridor Settlement)

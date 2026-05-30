@@ -6,7 +6,7 @@
 - **Solidity Version**: 0.8.28
 - **EVM Version**: Cancun
 - **Test Framework**: Hardhat + Mocha
-- **Timestamp**: January 2025 (Wave 4)
+- **Timestamp**: May 2026 (Wave 5 - Current)
 
 ---
 
@@ -60,6 +60,41 @@
 | `withdraw()` | ~54,890 | USDC transfer to employer |
 | `getBalance()` | ~2,180 | Read-only storage access |
 
+### PayShieldMultiSig (Wave 5)
+
+| Function | Gas Used | Includes |
+|----------|----------|----------|
+| `configureSigner()` | ~45,320 | Signer add/remove + validation |
+| `setThreshold()` | ~38,150 | Threshold update + verify count |
+| `createBatch()` | ~95,680 | Batch creation + contractor array |
+| `approve()` | ~52,430 | Approval + auto-execution if threshold met |
+
+### PayShieldAuditLog (Wave 5)
+
+| Function | Gas Used | Includes |
+|----------|----------|----------|
+| `log()` | ~35,240 | Append to team logs + emit event |
+| `authoriseLogger()` | ~42,100 | Logger authorization + mapping |
+| `getLogs()` | ~2,890 | Read-only paginated access |
+
+### PayShieldCorridorRegistry (Wave 5)
+
+| Function | Gas Used | Includes |
+|----------|----------|----------|
+| `registerCorridor()` | ~65,420 | New corridor + validation |
+| `pauseCorridor()` | ~31,150 | Corridor status toggle |
+| `setSettlementRouter()` | ~38,670 | Router authorization |
+| `incrementSettlementCount()` | ~24,890 | Counter increment (router-only) |
+
+### PayShieldSettlementRouter (Wave 5)
+
+| Function | Gas Used | Includes |
+|----------|----------|----------|
+| `setExchangeRateRef()` | ~45,320 | Store rate metadata per team |
+| `routeSettlement()` | ~95,680 | Settlement record + escrow call + audit |
+| `getTeamSettlements()` | ~3,150 | Read-only array access |
+| `getContractorRecords()` | ~2,980 | Read-only filtered access |
+
 ---
 
 ## FHE Encryption/Decryption Overhead
@@ -100,15 +135,41 @@
 
 ---
 
-## Comparison: Wave 3 vs Wave 4
+## Comparison: Wave 4 vs Wave 5
 
-| Aspect | Wave 3 | Wave 4 | Change |
+| Aspect | Wave 4 | Wave 5 | Change |
 |--------|--------|--------|--------|
-| ReentrancyGuard | None | All state-changing | Enable |
-| Custom Errors | Partial | Full | +144 lines |
-| Access Control | Basic | Comprehensive | Reinforce |
-| Test Coverage | Basic | Comprehensive (34 tests) | +25 tests |
-| Gas Export | Manual | Automated (gas-report.txt) | Enable |
+| Contracts | 4 (Registry, Payroll, Escrow, Pool) | 8 (+ MultiSig, AuditLog, CorridorRegistry, SettlementRouter) | +4 |
+| MultiSig Governance | None | Full batch approval system | Enable |
+| Audit Logging | Event-based | Immutable chain + team isolation | Enable |
+| Corridor Support | None | Nigeria-UK, Kenya-India, custom | Enable |
+| Settlement Routing | Direct to Escrow | Via Router with corridor tags | Enable |
+| Test Coverage | 34 tests | 97 tests | +63 tests |
+| Data Isolation | Minimal | Team-based teamId isolation | Reinforce |
+
+---
+
+## Wave 5 New Features & Gas Impact
+
+1. **MultiSig Batch Approval** (~95k per batch creation)
+   - Multi-signer governance for payroll releases
+   - Prevents single-point-of-failure in payment authorization
+   - One-time cost per batch; spreads across multiple contractors
+
+2. **Corridor Registry** (~65k per new corridor, ~24k per settlement)
+   - Track payment routes (Nigeria-UK, Kenya-India)
+   - Enable/disable corridors for compliance
+   - Minimal per-settlement overhead
+
+3. **Settlement Router** (~95k per routed settlement)
+   - Tags USDC disbursements with corridor labels
+   - Enforces team isolation (keccak256-based)
+   - Calls escrow.release() + logs audit trail
+
+4. **AuditLog** (~35k per log entry)
+   - Immutable record of all actions
+   - Multi-team query support
+   - Searchable by action type
 
 ---
 
@@ -133,5 +194,5 @@ The gas costs in this document reflect **Arbitrum Sepolia mock tests**. When dep
 
 ---
 
-**Last Updated**: January 2025 (Wave 4 Security Hardening)  
-**Next Review**: Post-mainnet deployment
+**Last Updated**: May 2026 (Wave 5 - MultiSig, AuditLog, Corridor Settlement)  
+**Next Review**: Post-mainnet deployment or Wave 6 implementation

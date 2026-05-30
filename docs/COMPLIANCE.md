@@ -117,14 +117,14 @@ PayShield enables employers to verify payroll submissions without compromising c
 
 ---
 
-## 9. Wave 6: Payment Corridor Tagging & Settlement Routing
+## 9. Wave 5: Payment Corridor Tagging & Settlement Routing
 
-PayShield Wave 6 introduces **Payment Corridor Tagging** enabling employers to tag USDC disbursements with payment corridors (e.g., Nigeria-UK, Kenya-India) for cross-border payroll settlements. Corridor tagging occurs at the `PayShieldSettlementRouter` contract level and is audited via immutable logs.
+PayShield Wave 5 (expansion phase) introduces **Payment Corridor Tagging** enabling employers to tag USDC disbursements with payment corridors (e.g., Nigeria-UK, Kenya-India) for cross-border payroll settlements. Corridor tagging occurs at the `PayShieldSettlementRouter` contract level and is audited via immutable logs.
 
 ### Corridor Tagging & FHE Privacy Boundary
 
 - **Plaintext Corridor Labels**: Corridor names (e.g., "Nigeria-UK", "Kenya-India") are stored explicitly on-chain as non-encrypted strings in settlement records. This is by design—corridor identifiers must be legible for settlement routing and regulatory reporting.
-- **Encrypted Wage Computation Preserved**: The wage amount itself **remains encrypted** throughout Wave 6 computation. USDC release amounts are derived from encrypted payroll (`euint32` from Wave 5) and decrypted only at Escrow release time via FHE network.
+- **Encrypted Wage Computation Preserved**: The wage amount itself **remains encrypted** throughout Wave 5 computation. USDC release amounts are derived from encrypted payroll (`euint32` from Wave 4) and decrypted only at Escrow release time via FHE network.
 - **Data Isolation by Team**: Settlement records are partitioned by `teamId = keccak256(abi.encodePacked(employer))`, ensuring employers access only their own team's corridor records. Contractors can read only their own settlement records within a team.
 - **Exchange Rate References**: Employers may store exchange rate metadata (up to 64 bytes, e.g., "CBN-2025-05-23") per team, visible only to that employer and auditors. Contractors never see rate references, preserving wage privacy.
 
@@ -133,26 +133,26 @@ PayShield Wave 6 introduces **Payment Corridor Tagging** enabling employers to t
 - **Purpose Limitation (NDPR 5(1)(b))**: Corridor tagging is strictly for settlement routing. The `routeSettlement()` function is called only by `PayShieldMultiSig` and enforces ledger-based access control.
 - **Data Minimisation (NDPR 3)**: Corridor names and exchange rate refs are the minimum metadata required for cross-border settlement compliance. No additional PII or wage details are stored.
 - **Team Data Isolation (Implicit Privacy)**: Mappings indexed by `teamId` ensure employers cannot view other employers' settlement records, and contractors cannot view other contractors' records within a team. This is enforced at the contract level (not just UI).
-- **Audit Logging (Wave 6)**: All corridor operations log to `PayShieldAuditLog` with action constants: `ACTION_SETTLEMENT_ROUTED`, `ACTION_CORRIDOR_REGISTERED`, `ACTION_CORRIDOR_PAUSED`, `ACTION_RATE_REF_SET`. Audit records themselves do not emit plaintext wage amounts.
+- **Audit Logging (Wave 5)**: All corridor operations log to `PayShieldAuditLog` with action constants: `ACTION_SETTLEMENT_ROUTED`, `ACTION_CORRIDOR_REGISTERED`, `ACTION_CORRIDOR_PAUSED`, `ACTION_RATE_REF_SET`. Audit records themselves do not emit plaintext wage amounts.
 - **Regulatory Reporting**: Corridor-tagged settlement records enable employers to provide regulatory authorities with compliance evidence (settlement dates, corridors, record counts) without exposing wage ciphertexts or contractor PII.
 
-**NDPR & MAS Compliance**: Wave 6 maintains the encrypted payroll boundary (plaintext wages never exposed) while enabling regulatory-compliant settlement metadata storage. The design respects contractor wage privacy (FHE encryption) and employer team isolation (team-based access control).
+**NDPR & MAS Compliance**: Wave 5 maintains the encrypted payroll boundary (plaintext wages never exposed) while enabling regulatory-compliant settlement metadata storage. The design respects contractor wage privacy (FHE encryption) and employer team isolation (team-based access control).
 
 ---
 
 **Effective Date**: January 2025  
-**Last Updated**: May 2025 (Wave 6 added)
+**Last Updated**: May 2026 (Wave 5 Corridor Settlement Layer added)
 
 ---
 
 ## Compliance Checklist
 
-- ✅ Data Minimisation: Only encrypted ciphertext and wallet addresses stored; Wave 6 adds plaintext corridor metadata only
-- ✅ Purpose Limitation: `FHE.allow()` enforces access control per-contract; Wave 6 corridors serve settlement routing only
-- ✅ Right of Access: Contractors decrypt via self-signed permit; Wave 6 contractors read only their records
+- ✅ Data Minimisation: Only encrypted ciphertext and wallet addresses stored; Wave 5 adds plaintext corridor metadata only
+- ✅ Purpose Limitation: `FHE.allow()` enforces access control per-contract; Wave 5 corridors serve settlement routing only
+- ✅ Right of Access: Contractors decrypt via self-signed permit; Wave 5 contractors read only their records
 - ✅ Right to Erasure: Ciphertext irreversible; not personal data
-- ✅ Data Security: FHE encryption + ReentrancyGuard + no plaintext logging; Wave 6 adds team isolation enforcement
+- ✅ Data Security: FHE encryption + ReentrancyGuard + no plaintext logging; Wave 5 adds team isolation enforcement
 - ✅ Transparency: Third-party processors (Fhenix, Privara, Arbitrum) disclosed
-- ✅ Employer Audit: Event logs enable audit without wage disclosure; Wave 6 audit logs corridor operations
+- ✅ Employer Audit: Event logs enable audit without wage disclosure; Wave 5 audit logs corridor operations
 - ✅ Legal Basis: Article 6(1)(b)-(c); retention policy documented
-- ✅ Wave 6 Corridors: Plaintext corridor labels for settlement routing; wage encryption preserved; team data isolation enforced
+- ✅ Wave 5 Corridors: Plaintext corridor labels for settlement routing; wage encryption preserved; team data isolation enforced
